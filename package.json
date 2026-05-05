@@ -1,0 +1,25 @@
+{
+  "name": "specreview",
+  "version": "1.0.0",
+  "description": "Multi-role code review skill for AI coding assistants — /specreview <spec-name>",
+  "keywords": ["specreview", "code-review", "claude-code", "ai", "skill"],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "specreview": "./bin/specreview.js"
+  },
+  "files": [
+    "bin",
+    "commands",
+    "templates"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "dependencies": {
+    "commander": "^14.0.0",
+    "@inquirer/prompts": "^7.8.0",
+    "ora": "^8.2.0",
+    "chalk": "^5.5.0"
+  }
+}
