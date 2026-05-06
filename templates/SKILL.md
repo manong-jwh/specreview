@@ -49,7 +49,7 @@ metadata:
 
 **A. 角色名称**
 展示已有角色名作为参考：
-> 现有角色：代码审查员、逻辑审查员、需求审查员、性能审查员、依赖审查员、安全审查员、测试审查员
+> 现有内置角色：代码审查员、逻辑审查员、需求审查员、性能审查员、依赖审查员、安全审查员、测试审查员（可自定义添加更多角色）
 > 问：「新角色叫什么名字？」
 
 **B. 角色 ID（用于文件名）**
@@ -205,6 +205,8 @@ openspec/changes/{spec-name}/
 | 依赖审查员 | `specreview/config/dep-check.md` | 40 | 依赖必要性、版本兼容、安全漏洞 |
 | 安全审查员 | `specreview/config/security-check.md` | 60 | 注入防护、敏感信息、权限校验 |
 | 测试审查员 | `specreview/config/test-check.md` | 70 | 异常捕获、超时重试、日志记录、降级策略 |
+
+> 以上为内置角色。如需添加自定义角色（如 API 审查、TypeScript 类型检查等），参考 `/specreview init` 流程或直接编辑 `specreview/config.yaml` 在 `roles:` 下追加。
 
 ---
 
