@@ -2,11 +2,17 @@
   "name": "specreview",
   "version": "1.0.0",
   "description": "Multi-role code review skill for AI coding assistants — /specreview <spec-name>",
-  "keywords": ["specreview", "code-review", "claude-code", "ai", "skill"],
+  "keywords": [
+    "specreview",
+    "code-review",
+    "claude-code",
+    "ai",
+    "skill"
+  ],
   "license": "MIT",
   "type": "module",
   "bin": {
-    "specreview": "./bin/specreview.js"
+    "specreview": "bin/specreview.js"
   },
   "files": [
     "bin",
