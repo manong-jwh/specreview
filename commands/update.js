@@ -1,41 +1,45 @@
-import { existsSync, readFileSync, mkdirSync, writeFileSync, readdirSync } from 'fs';
-import { resolve, dirname, join } from 'path';
+// ---------------------------------------------------------------------------
+// specreview update — orchestration layer
+// ---------------------------------------------------------------------------
+
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { dirname, resolve, join } from 'path';
 import { fileURLToPath } from 'url';
 import ora from 'ora';
 import chalk from 'chalk';
+import { TOOLS, CONFIG_FILES, CONFIG_YAML } from '../constants.js';
+import { FileService } from '../services/file-service.js';
+import { TemplateService } from '../services/template-service.js';
+import { ToolService } from '../services/tool-service.js';
+import { validateConfigYaml } from '../services/config-validator.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = resolve(__dirname, '../templates');
+const TEMPLATES_DIR = resolve(__dirname, '..', 'templates');
 
-const TOOLS = [
-  { id: 'claude',         name: 'Claude Code',       dir: '.claude' },
-  { id: 'cursor',         name: 'Cursor',             dir: '.cursor' },
-  { id: 'windsurf',       name: 'Windsurf',           dir: '.windsurf' },
-  { id: 'github-copilot', name: 'GitHub Copilot',     dir: '.github' },
-  { id: 'cline',          name: 'Cline',               dir: '.cline' },
-  { id: 'roocode',        name: 'RooCode',             dir: '.roo' },
-  { id: 'codex',          name: 'Codex CLI',           dir: '.codex' },
-  { id: 'warp',           name: 'Warp',                dir: '.warp' },
-];
+const execAsync = promisify(exec);
 
-function readTemplate(name) {
-  const p = join(TEMPLATES_DIR, name);
-  if (!existsSync(p)) throw new Error(`Template not found: ${name}`);
-  return readFileSync(p, 'utf-8');
-}
+// ── Public API ──────────────────────────────────────────────────────────
 
-function ensureDir(p) {
-  if (!existsSync(p)) mkdirSync(p, { recursive: true });
-}
-
+/**
+ * Update specreview npm package + local files (preserves customizations).
+ *
+ * @param {object} opts
+ * @param {string} opts.projectPath – absolute project root.
+ */
 export async function update({ projectPath }) {
   console.log(chalk.bold('\n  specreview update\n'));
 
-  // 1. 检测已配置的工具
-  const configured = TOOLS.filter(t => {
-    const skillFile = join(projectPath, t.dir, 'skills', 'specreview', 'SKILL.md');
-    return existsSync(skillFile);
-  });
+  // ── Build services ──
+  const projectFs = new FileService(projectPath);
+  const templateSvc = new TemplateService(TEMPLATES_DIR);
+  const toolSvc = new ToolService(TOOLS, projectFs);
+
+  // ── Step 0: Update global npm package ──
+  await updateNpmPackage();
+
+  // ── Step 1: Detect configured tools ──
+  const configured = detectConfiguredTools(projectFs, toolSvc);
 
   if (configured.length === 0) {
     console.log('  No existing specreview configuration found. Run `specreview init` first.\n');
@@ -44,38 +48,98 @@ export async function update({ projectPath }) {
 
   console.log(`  Found specreview in: ${configured.map(t => t.name).join(', ')}`);
 
-  // 2. 更新 SKILL.md（覆盖）
+  // ── Step 2: Update SKILL.md (overwrite) ──
   const skillSpinner = ora({ text: 'Updating skills...', color: 'gray' }).start();
-  const skillContent = readTemplate('SKILL.md');
-  let updated = 0;
+  const skillContent = templateSvc.getSkillContent();
+  let skillUpdated = 0;
 
   for (const tool of configured) {
-    const skillFile = join(projectPath, tool.dir, 'skills', 'specreview', 'SKILL.md');
-    ensureDir(dirname(skillFile));
-    writeFileSync(skillFile, skillContent, 'utf-8');
-    updated++;
+    const skillFile = join(tool.dir, 'skills', 'specreview', 'SKILL.md');
+    projectFs.write(skillFile, skillContent);
+    skillUpdated++;
   }
 
-  skillSpinner.succeed(`Skills: ${updated} SKILL.md files updated`);
+  skillSpinner.succeed(`Skills: ${skillUpdated} SKILL.md files updated`);
 
-  // 3. 检查 config 目录是否存在，提醒用户手动合并
-  const configDir = join(projectPath, 'specreview', 'config');
-  const configYaml = join(configDir, 'config.yaml');
+  // ── Step 3: Sync config / role files ──
+  syncConfigFiles(projectFs, templateSvc);
 
-  if (existsSync(configYaml)) {
-    console.log(`  ${chalk.dim('Config: specreview/config/ already exists (preserved).')}`);
-    console.log(`  ${chalk.dim('  New role templates are available in the package.')}`);
-    console.log(`  ${chalk.dim('  Compare: diff specreview/config/ <npm-prefix>/lib/node_modules/specreview/templates/config/')}`);
-  } else {
-    console.log(`  ${chalk.yellow('Config: specreview/config/ not found. Run `specreview init` to set up.')}`);
-  }
-
+  // ── Step 4: Summary ──
   console.log();
   console.log(chalk.bold('  Update Complete'));
   console.log();
-  console.log(`  ${chalk.green('✔')} Skills updated        ${chalk.dim('(overwritten with latest)')}`);
-  console.log(`  ${chalk.dim('•')} Config preserved       ${chalk.dim('(your customizations kept)')}`);
+  console.log(`  ${chalk.green('✔')} specreview npm package  ${chalk.dim('updated to latest')}`);
+  console.log(`  ${chalk.green('✔')} SKILL.md               ${chalk.dim('overwritten')}`);
+  console.log(`  ${chalk.green('✔')} Config / role checks   ${chalk.dim('synced (customizations preserved)')}`);
   console.log();
   console.log(`  ${chalk.dim('Restart your AI assistant for updated skills to take effect.')}`);
   console.log();
+}
+
+// ── Internal steps ──────────────────────────────────────────────────────
+
+async function updateNpmPackage() {
+  const npmSpinner = ora({ text: 'Checking for specreview updates...', color: 'gray' }).start();
+  try {
+    const { stderr } = await execAsync('npm update -g specreview', { timeout: 30000 });
+
+    if (stderr && stderr.includes('npm ERR')) {
+      npmSpinner.warn(`npm warning:\n${stderr}`);
+    } else {
+      npmSpinner.succeed('npm package updated to latest version');
+    }
+  } catch (err) {
+    // Differentiate error types for accurate feedback
+    if (err.code === 'ENOENT') {
+      npmSpinner.fail('npm not found — is Node.js/npm installed?');
+    } else if (err.killed) {
+      npmSpinner.warn('npm update timed out after 30s; check your network connection');
+    } else if (err.stderr?.includes('EACCES') || err.stderr?.includes('EPERM')) {
+      npmSpinner.warn('Permission error — try running with sudo or fix npm permissions');
+    } else if (err.stderr?.includes('not found') || err.stderr?.includes('404')) {
+      npmSpinner.warn('specreview package not found in registry; skipping npm update');
+    } else {
+      npmSpinner.warn(`npm update skipped: ${(err.stderr || err.message || 'unknown error').trim()}`);
+    }
+  }
+}
+
+function detectConfiguredTools(projectFs, toolSvc) {
+  return toolSvc.getAll().filter(t => {
+    return projectFs.exists(join(t.dir, 'skills', 'specreview', 'SKILL.md'));
+  });
+}
+
+function syncConfigFiles(projectFs, templateSvc) {
+  console.log();
+  console.log(chalk.bold('  Config & Role Checks'));
+  console.log();
+
+  const specreviewDir = 'specreview';
+  const configDir = join(specreviewDir, 'config');
+
+  // Validate the template config before writing (catches template bugs early)
+  const freshYaml = templateSvc.getConfigYaml();
+  validateConfigYaml(freshYaml, { expectedRoles: true });
+
+  // Sync config.yaml
+  const yamlPath = join(specreviewDir, CONFIG_YAML);
+  if (projectFs.exists(yamlPath)) {
+    console.log(`  ${chalk.green('✔')} ${CONFIG_YAML.padEnd(20)} ${chalk.dim('preserved (your customizations kept)')}`);
+  } else {
+    projectFs.write(yamlPath, freshYaml);
+    console.log(`  ${chalk.cyan('+')} ${CONFIG_YAML.padEnd(20)} ${chalk.dim('created (new in this version)')}`);
+  }
+
+  // Sync role-check files
+  for (const file of CONFIG_FILES) {
+    const filePath = join(configDir, file);
+    if (projectFs.exists(filePath)) {
+      console.log(`  ${chalk.green('✔')} ${file.padEnd(20)} ${chalk.dim('preserved (your customizations kept)')}`);
+    } else {
+      const content = templateSvc.getRoleCheckFile(file);
+      projectFs.write(filePath, content);
+      console.log(`  ${chalk.cyan('+')} ${file.padEnd(20)} ${chalk.dim('created (new in this version)')}`);
+    }
+  }
 }

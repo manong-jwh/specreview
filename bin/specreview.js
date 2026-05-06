@@ -5,6 +5,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { init } from '../commands/init.js';
 import { update } from '../commands/update.js';
+import { validateProjectPath } from '../commands/shared.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'));
@@ -23,27 +24,33 @@ program
   .option('--force', 'Overwrite existing files without prompting')
   .action(async (directory = '.', options) => {
     try {
-      const projectPath = resolve(process.cwd(), directory);
+      const cwd = process.cwd();
+      const projectPath = resolve(cwd, directory);
+      validateProjectPath(projectPath, cwd);
+
       const tools = options.tools
         ? options.tools.split(',').map(t => t.trim().toLowerCase())
         : undefined;
       await init({ projectPath, tools, force: options.force ?? false });
     } catch (err) {
       console.error(`\n  Error: ${err.message}`);
-      process.exit(1);
+      process.exitCode = 1;
     }
   });
 
 program
   .command('update [directory]')
-  .description('Update specreview SKILL.md files (preserves your config)')
+  .description('Update specreview npm package + local files (preserves config customizations)')
   .action(async (directory = '.') => {
     try {
-      const projectPath = resolve(process.cwd(), directory);
+      const cwd = process.cwd();
+      const projectPath = resolve(cwd, directory);
+      validateProjectPath(projectPath, cwd);
+
       await update({ projectPath });
     } catch (err) {
       console.error(`\n  Error: ${err.message}`);
-      process.exit(1);
+      process.exitCode = 1;
     }
   });
 

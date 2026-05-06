@@ -3,3 +3,6 @@ npm-debug.log*
 .DS_Store
 *.swp
 *.swo
+coverage/
+.vitest/
+.eslintcache
