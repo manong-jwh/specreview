@@ -1,25 +1,40 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FileService } from '../../services/file-service.js';
 
-/**
- * In-memory filesystem mock for testing FileService.
- */
-function createMemFs(initial = {}) {
-  const store = { ...initial };
+interface MemFsStore {
+  [key: string]: string | null;
+}
 
+interface MemFs {
+  existsSync: (p: string) => boolean;
+  mkdirSync: (p: string) => void;
+  writeFileSync: (p: string, content: string) => void;
+  readFileSync: (p: string) => string;
+  rmSync: (p: string) => void;
+  _store: MemFsStore;
+}
+
+function createMemFs(initial: Record<string, string> = {}): MemFs {
+  const store: MemFsStore = { ...initial };
   return {
     existsSync: (p) => p in store,
-    mkdirSync: (p) => { store[p] = null; }, // mark directory as created
-    writeFileSync: (p, content) => { store[p] = content; },
-    readFileSync: (p) => store[p],
-    rmSync: (p) => { delete store[p]; },
+    mkdirSync: (p: string) => {
+      store[p] = null;
+    },
+    writeFileSync: (p, content) => {
+      store[p] = content;
+    },
+    readFileSync: (p) => store[p] as string,
+    rmSync: (p) => {
+      delete store[p];
+    },
     _store: store,
   };
 }
 
 describe('FileService', () => {
-  let memFs;
-  let svc;
+  let memFs: MemFs;
+  let svc: FileService;
 
   beforeEach(() => {
     memFs = createMemFs({ '/base/specreview/config.yaml': 'roles:' });
@@ -49,7 +64,7 @@ describe('FileService', () => {
   describe('write', () => {
     it('writes file and creates parent directories', () => {
       svc.write('new-dir/hello.txt', 'world');
-      expect(memFs._store['/base/new-dir']).toBeDefined(); // dir created
+      expect(memFs._store['/base/new-dir']).toBeDefined();
       expect(memFs._store['/base/new-dir/hello.txt']).toBe('world');
     });
   });
@@ -64,14 +79,11 @@ describe('FileService', () => {
 
   describe('snapshot / restore', () => {
     it('captures and restores file state', () => {
-      // Take snapshot BEFORE modifying
       const snapshot = svc.takeSnapshot(['specreview/config.yaml']);
 
-      // Now modify
       svc.write('specreview/config.yaml', 'modified');
       expect(memFs._store['/base/specreview/config.yaml']).toBe('modified');
 
-      // Restore to snapshot state
       svc.restoreSnapshot(snapshot);
       expect(memFs._store['/base/specreview/config.yaml']).toBe('roles:');
     });

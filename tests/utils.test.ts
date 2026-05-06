@@ -12,12 +12,12 @@ describe('validateProjectPath', () => {
   });
 
   it('throws for a path outside cwd', () => {
-    expect(() => validateProjectPath('/etc/passwd', '/home/user'))
-      .toThrow('outside the current working directory');
+    expect(() => validateProjectPath('/etc/passwd', '/home/user')).toThrow(
+      'outside the current working directory',
+    );
   });
 
   it('throws for a path that traverses outside cwd (after resolution)', () => {
-    // Simulate what path.resolve(process.cwd(), directory) does
     const cwd = '/home/user/project';
     const traversal = resolve(cwd, '../../etc');
     expect(() => validateProjectPath(traversal, cwd)).toThrow();

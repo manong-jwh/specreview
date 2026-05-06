@@ -1,19 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ToolService } from '../../services/tool-service.js';
 
 const MOCK_TOOLS = [
-  { id: 'claude',         name: 'Claude Code',       dir: '.claude' },
-  { id: 'cursor',         name: 'Cursor',             dir: '.cursor' },
-  { id: 'github-copilot', name: 'GitHub Copilot',     dir: '.github' },
+  { id: 'claude', name: 'Claude Code', dir: '.claude' },
+  { id: 'cursor', name: 'Cursor', dir: '.cursor' },
+  { id: 'github-copilot', name: 'GitHub Copilot', dir: '.github' },
 ];
 
-/**
- * Stub FileService for testing ToolService in isolation.
- */
-function stubFs(presentDirs = []) {
+function stubFs(presentDirs: string[] = []) {
   return {
-    exists(relPath) {
-      return presentDirs.some(d => relPath === d || relPath.endsWith('/' + d));
+    exists(relPath: string) {
+      return presentDirs.some((d) => relPath === d || relPath.endsWith('/' + d));
     },
   };
 }

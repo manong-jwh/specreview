@@ -14,12 +14,12 @@ describe('constants', () => {
     });
 
     it('has unique IDs', () => {
-      const ids = TOOLS.map(t => t.id);
+      const ids = TOOLS.map((t) => t.id);
       expect(new Set(ids).size).toBe(ids.length);
     });
 
     it('has unique directory names', () => {
-      const dirs = TOOLS.map(t => t.dir);
+      const dirs = TOOLS.map((t) => t.dir);
       expect(new Set(dirs).size).toBe(dirs.length);
     });
   });
@@ -58,12 +58,12 @@ describe('constants', () => {
     });
 
     it('has unique priorities', () => {
-      const priorities = ROLES.map(r => r.priority);
+      const priorities = ROLES.map((r) => r.priority);
       expect(new Set(priorities).size).toBe(priorities.length);
     });
 
     it('each role ID matches a CONFIG_FILES entry', () => {
-      const fileNames = CONFIG_FILES.map(f => f.replace('.md', ''));
+      const fileNames = CONFIG_FILES.map((f) => f.replace('.md', ''));
       for (const role of ROLES) {
         expect(fileNames).toContain(role.id);
       }

@@ -8,7 +8,9 @@ import { update } from '../commands/update.js';
 import { validateProjectPath } from '../commands/shared.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'));
+// Works both when running from source (bin/) and compiled (dist/bin/)
+const rootDir = resolve(__dirname, __dirname.includes('/dist/') ? '../../' : '../');
+const pkg = JSON.parse(readFileSync(resolve(rootDir, 'package.json'), 'utf-8')) as { version: string };
 
 const program = new Command();
 
@@ -22,18 +24,18 @@ program
   .description('Initialize specreview in your project')
   .option('--tools <tools>', 'Comma-separated tool IDs (claude,cursor,windsurf,...). Omit for interactive selection.')
   .option('--force', 'Overwrite existing files without prompting')
-  .action(async (directory = '.', options) => {
+  .action(async (directory = '.', options: { tools?: string; force?: boolean }) => {
     try {
       const cwd = process.cwd();
       const projectPath = resolve(cwd, directory);
       validateProjectPath(projectPath, cwd);
 
       const tools = options.tools
-        ? options.tools.split(',').map(t => t.trim().toLowerCase())
+        ? options.tools.split(',').map((t) => t.trim().toLowerCase())
         : undefined;
       await init({ projectPath, tools, force: options.force ?? false });
     } catch (err) {
-      console.error(`\n  Error: ${err.message}`);
+      console.error(`\n  Error: ${(err as Error).message}`);
       process.exitCode = 1;
     }
   });
@@ -49,7 +51,7 @@ program
 
       await update({ projectPath });
     } catch (err) {
-      console.error(`\n  Error: ${err.message}`);
+      console.error(`\n  Error: ${(err as Error).message}`);
       process.exitCode = 1;
     }
   });

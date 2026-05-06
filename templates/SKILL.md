@@ -5,12 +5,13 @@ license: MIT
 compatibility: Requires openspec CLI and openspec/changes/ directory structure.
 metadata:
   author: specreview
-  version: "1.0"
+  version: '1.0'
 ---
 
 # specreview — 多角色代码审查
 
 **触发方式：**
+
 - `/specreview <spec-name>` — 对指定 spec 进行多角色代码审查
 - `/specreview init` — 自定义角色配置（添加、编辑、启用/禁用角色）
 
@@ -51,11 +52,11 @@ openspec/changes/{spec-name}/         ← OpenSpec 变更目录
 ```markdown
 当前角色配置（共 N 个角色）：
 
-| 角色 | 优先级 | 状态 |
-|------|--------|------|
-| 代码审查员 | 10 | ✅ 启用 |
-| 逻辑审查员 | 20 | ✅ 启用 |
-| ... | ... | ... |
+| 角色       | 优先级 | 状态    |
+| ---------- | ------ | ------- |
+| 代码审查员 | 10     | ✅ 启用 |
+| 逻辑审查员 | 20     | ✅ 启用 |
+| ...        | ...    | ...     |
 ```
 
 ### Step 2：收集新角色信息
@@ -75,7 +76,9 @@ openspec/changes/{spec-name}/         ← OpenSpec 变更目录
 ### Step 3：确认并写入
 
 收集完信息后，展示即将生成的内容摘要：
+
 > 问：「即将添加以下角色，确认写入？
+>
 > - 名称：API 审查员
 > - ID：api-check
 > - 检查要点：注入防护、权限校验、敏感信息
@@ -85,20 +88,22 @@ openspec/changes/{spec-name}/         ← OpenSpec 变更目录
 > `specreview/config/api-check.md`
 
 用户确认后执行（以下路径均为项目根目录下）：
+
 1. 在 `specreview/config.yaml` 的 `roles:` 下追加新角色条目，设 `enabled: true`
 2. 在 `specreview/config/` 下创建 `{role-id}.md`，格式参考 `specreview/config/` 下已有角色文件：
 
 ```markdown
 ---
-name: {role-id}
-description: {检查要点简述}
-role: {角色名称}
-priority: {优先级}
+name: { role-id }
+description: { 检查要点简述 }
+role: { 角色名称 }
+priority: { 优先级 }
 ---
 
 # {角色名称}
 
 ## Persona
+
 {根据检查要点自动生成的角色描述}
 
 ## 检查要点（只针对改动区域）
@@ -108,7 +113,7 @@ priority: {优先级}
 ## 报告格式
 
 | 文件 | 行号 | 问题描述 | 严重程度 | 建议 |
-|------|------|----------|----------|------|
+| ---- | ---- | -------- | -------- | ---- |
 ```
 
 3. 告知：「✅ 角色「API 审查员」已添加，将在下次 `/specreview` 审查时生效」
@@ -146,6 +151,7 @@ openspec/changes/{spec-name}/
 依次读取 `proposal.md`、`design.md`、`tasks.md` 三个文件，获取完整上下文。如果 `specs/` 目录存在，递归读取其下所有 `spec.md` 文件 — 这些是特性级别的需求规格（WHEN/THEN 格式的验收场景），**需求审查员**需以此为准判断代码是否满足需求。
 
 从 spec 文件中提取文件列表：
+
 1. **proposal.md 的 "Impact" 段落** — 主要文件清单
 2. **tasks.md** — 每个任务涉及的具体文件
 3. **design.md** — 模块/文件结构和数据流中提到的文件
@@ -171,8 +177,8 @@ openspec/changes/{spec-name}/
 ```markdown
 ### [角色名]
 
-| 文件 | 行号 | 问题描述 | 严重程度 | 建议 |
-|------|------|----------|----------|------|
+| 文件 | 行号 | 问题描述 | 严重程度     | 建议 |
+| ---- | ---- | -------- | ------------ | ---- |
 | ...  | ...  | ...      | high/mid/low | ...  |
 ```
 
@@ -182,28 +188,23 @@ openspec/changes/{spec-name}/
 
 将所有角色的审查结果编译为最终报告，包含：
 
-```
-┌──────────────────────────────────────────────┐
-│           specreview 审查报告                  │
-│           Spec: change-table                  │
-│           审查日期: 2026-05-05                 │
-├──────────────────────────────────────────────┤
-│                                              │
-│  受影响文件: file1.js, file2.py, ...         │
-│                                              │
-│  ┌─ 代码审查员 ────────────────────────────┐ │
-│  │  通过 ✅                                  │ │
-│  └──────────────────────────────────────────┘ │
-│  ┌─ 逻辑审查员 ────────────────────────────┐ │
-│  │  2 个问题 (1 high, 1 low)                 │ │
-│  └──────────────────────────────────────────┘ │
-│  ... (更多角色)                                │
-│                                              │
-│  ★ 重点行动项:                                │
-│  1. [高] file.py:12 — 集合越界风险            │
-│  2. [中] ...                                  │
-└──────────────────────────────────────────────┘
-```
+| specreview 审查报告 |                         |
+| ------------------- | ----------------------- |
+| Spec                | change-table            |
+| 审查日期            | 2026-05-05              |
+| 受影响文件          | file1.js, file2.py, ... |
+
+| 角色       | 结果                        |
+| ---------- | --------------------------- |
+| 代码审查员 | ✅ 通过                     |
+| 逻辑审查员 | ⚠️ 2 个问题 (1 high, 1 low) |
+| ...        | ...                         |
+
+**重点行动项：**
+| # | 严重程度 | 文件 | 问题描述 |
+|---|----------|------|----------|
+| 1 | 🔴 高 | file.py:12 | 集合越界风险 |
+| 2 | 🟡 中 | ... | ... |
 
 ### Step 7：输出结果
 
@@ -213,15 +214,15 @@ openspec/changes/{spec-name}/
 
 ## 角色列表（内置默认）
 
-| 角色 | 文件 | 优先级 | 关注领域 |
-|------|------|--------|----------|
-| 代码审查员 | `specreview/config/code-check.md` | 10 | 可读性、命名、DRY、注释、代码风格 |
-| 逻辑审查员 | `specreview/config/logic-check.md` | 20 | 边界条件、分支覆盖、循环终止、状态流转 |
-| 需求审查员 | `specreview/config/spec-check.md` | 25 | 需求覆盖、范围控制、设计偏差 |
-| 性能审查员 | `specreview/config/perf-check.md` | 30 | N+1、循环耗时操作、资源释放 |
-| 依赖审查员 | `specreview/config/dep-check.md` | 40 | 依赖必要性、版本兼容、安全漏洞 |
-| 安全审查员 | `specreview/config/security-check.md` | 60 | 注入防护、敏感信息、权限校验 |
-| 测试审查员 | `specreview/config/test-check.md` | 70 | 异常捕获、超时重试、日志记录、降级策略 |
+| 角色       | 文件                                  | 优先级 | 关注领域                               |
+| ---------- | ------------------------------------- | ------ | -------------------------------------- |
+| 代码审查员 | `specreview/config/code-check.md`     | 10     | 可读性、命名、DRY、注释、代码风格      |
+| 逻辑审查员 | `specreview/config/logic-check.md`    | 20     | 边界条件、分支覆盖、循环终止、状态流转 |
+| 需求审查员 | `specreview/config/spec-check.md`     | 25     | 需求覆盖、范围控制、设计偏差           |
+| 性能审查员 | `specreview/config/perf-check.md`     | 30     | N+1、循环耗时操作、资源释放            |
+| 依赖审查员 | `specreview/config/dep-check.md`      | 40     | 依赖必要性、版本兼容、安全漏洞         |
+| 安全审查员 | `specreview/config/security-check.md` | 60     | 注入防护、敏感信息、权限校验           |
+| 测试审查员 | `specreview/config/test-check.md`     | 70     | 异常捕获、超时重试、日志记录、降级策略 |
 
 > ⚠️ 实际启用的角色以 `specreview/config.yaml` 为准。用户可自定义添加或调整内置角色，参考 `/specreview init` 流程。
 

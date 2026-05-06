@@ -1,16 +1,8 @@
 // ---------------------------------------------------------------------------
 // Backward-compatibility re-exports
 // ---------------------------------------------------------------------------
-// Constants have moved to ../constants.js. This file re-exports for any
-// external consumer that may import from 'specreview/commands/shared.js'.
-// ---------------------------------------------------------------------------
 
-export {
-  TOOLS,
-  CONFIG_FILES,
-  CONFIG_YAML,
-  ROLES,
-} from '../constants.js';
+export { TOOLS, CONFIG_FILES, CONFIG_YAML, ROLES } from '../constants.js';
 
 export { validateProjectPath } from '../utils.js';
 

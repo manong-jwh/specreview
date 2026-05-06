@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateConfigYaml } from '../../services/config-validator.js';
 
-// Minimal valid config snippet for baseline tests
 const VALID_CONFIG = `
 roles:
   code-check:
@@ -31,7 +30,6 @@ describe('config-validator', () => {
   });
 
   it('passes the real template config with full role validation', async () => {
-    // Dynamic import is fine in ESM test files
     const { TemplateService } = await import('../../services/template-service.js');
     const svc = new TemplateService();
     const content = svc.getConfigYaml();
@@ -40,13 +38,16 @@ describe('config-validator', () => {
 
   describe('error detection', () => {
     it('detects missing roles key', () => {
-      expect(() => validateConfigYaml('report:\n  format: markdown', { expectedRoles: false }))
-        .toThrow('roles');
+      expect(() => validateConfigYaml('report:\n  format: markdown', { expectedRoles: false })).toThrow('roles');
     });
 
     it('detects missing report key', () => {
-      expect(() => validateConfigYaml('roles:\n  code-check:\n    title: x\n    enabled: true\n    priority: 10\n    description: x', { expectedRoles: false }))
-        .toThrow('report');
+      expect(() =>
+        validateConfigYaml(
+          'roles:\n  code-check:\n    title: x\n    enabled: true\n    priority: 10\n    description: x',
+          { expectedRoles: false },
+        ),
+      ).toThrow('report');
     });
 
     it('detects missing required role properties', () => {
@@ -56,10 +57,8 @@ roles:
     title: 代码审查员
     enabled: true
     priority: 10
-    # missing description
 `;
-      expect(() => validateConfigYaml(bad, { expectedRoles: false }))
-        .toThrow(/missing required property.*description/i);
+      expect(() => validateConfigYaml(bad, { expectedRoles: false })).toThrow(/missing required property.*description/i);
     });
 
     it('flags non-boolean enabled value', () => {
@@ -71,8 +70,7 @@ roles:
     enabled: "yes"
     priority: 10
 `;
-      expect(() => validateConfigYaml(bad, { expectedRoles: false }))
-        .toThrow(/enabled.*should be true or false/i);
+      expect(() => validateConfigYaml(bad, { expectedRoles: false })).toThrow(/enabled.*should be true or false/i);
     });
 
     it('flags non-integer priority', () => {
@@ -84,8 +82,7 @@ roles:
     enabled: true
     priority: high
 `;
-      expect(() => validateConfigYaml(bad, { expectedRoles: false }))
-        .toThrow(/priority.*should be an integer/i);
+      expect(() => validateConfigYaml(bad, { expectedRoles: false })).toThrow(/priority.*should be an integer/i);
     });
 
     it('detects missing expected roles', () => {
@@ -104,8 +101,7 @@ report:
   severity_labels:
     high: 🔴
 `;
-      expect(() => validateConfigYaml(partial, { expectedRoles: true }))
-        .toThrow(/missing expected roles/i);
+      expect(() => validateConfigYaml(partial, { expectedRoles: true })).toThrow(/missing expected roles/i);
     });
   });
 });
