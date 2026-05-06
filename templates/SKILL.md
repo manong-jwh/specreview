@@ -56,7 +56,7 @@ metadata:
 > 问：「角色 ID 是什么？（如 `api-check`。直接回车则根据名称自动生成 kebab-case 格式）」
 
 **C. 检查要点**
-先扫描项目 tech stack（读取 `package.json`、框架配置文件、源文件等），然后结合用户输入的角色名称和项目实际技术栈，由 AI 自动生成 4~5 个具体、贴合项目的检查要点作为建议候选。使用 **AskUserQuestion**（`multiSelect: true`）让用户选择，同时接受自定义输入。
+先扫描项目 tech stack（读取 `package.json`、框架配置文件、源文件等），然后结合用户输入的角色名称和项目实际技术栈，自动生成 4~5 个具体、贴合项目的检查要点建议，以列表形式展示给用户。用户通过对话自由选择、修改或自行输入自定义检查要点，无数量限制。
 
 **D. 优先级**
 > 参考当前角色优先级范围（如 10~70），问：「优先级是多少？（数字，越小越先执行）」
@@ -121,6 +121,7 @@ priority: {优先级}
 openspec/changes/{spec-name}/
 ├── proposal.md       → "Impact" 段落列出了所有受影响文件
 ├── design.md         → 技术决策和架构设计
+├── spec.md           → 需求规格和验收标准
 └── tasks.md          → 具体任务和改动细节
 ```
 
@@ -128,10 +129,13 @@ openspec/changes/{spec-name}/
 
 ### Step 3：识别受影响的源文件
 
+依次读取 `spec.md`、`proposal.md`、`design.md`、`tasks.md` 四个文件，获取完整上下文。
+
 从 spec 文件中提取文件列表：
 1. **proposal.md 的 "Impact" 段落** — 主要文件清单
 2. **tasks.md** — 每个任务涉及的具体文件
 3. **design.md** — 模块/文件结构和数据流中提到的文件
+4. **spec.md** — 需求规格中提到的模块和边界
 
 列出所有受影响的源文件（排除 openspec/ 目录自身的文档），按项目实际使用的语言/框架类型识别。
 
