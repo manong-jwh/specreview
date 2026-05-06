@@ -130,23 +130,25 @@ priority: {优先级}
 
 ```
 openspec/changes/{spec-name}/
-├── proposal.md       → "Impact" 段落列出了所有受影响文件
+├── proposal.md       → 变更提案（Why/What/Impact/Capabilities）
 ├── design.md         → 技术决策和架构设计
-├── spec.md           → 需求规格和验收标准
+├── specs/            → 子 spec 目录：按特性拆分的详细需求规格
+│   └── {feature}/spec.md  → WHEN/THEN 格式的验收场景描述
 └── tasks.md          → 具体任务和改动细节
 ```
+
+如果 `specs/` 目录存在，递归读取其下所有 `*.md` 文件。`specs/{feature}/spec.md` 包含该特性的详细需求规格，是**需求审查员**判断代码是否满足需求的核心依据。
 
 如果目录不存在，告知用户该 spec 不存在，提示先运行 `/opsx:propose` 创建它。
 
 ### Step 3：识别受影响的源文件
 
-依次读取 `spec.md`、`proposal.md`、`design.md`、`tasks.md` 四个文件，获取完整上下文。
+依次读取 `proposal.md`、`design.md`、`tasks.md` 三个文件，获取完整上下文。如果 `specs/` 目录存在，递归读取其下所有 `spec.md` 文件 — 这些是特性级别的需求规格（WHEN/THEN 格式的验收场景），**需求审查员**需以此为准判断代码是否满足需求。
 
 从 spec 文件中提取文件列表：
 1. **proposal.md 的 "Impact" 段落** — 主要文件清单
 2. **tasks.md** — 每个任务涉及的具体文件
 3. **design.md** — 模块/文件结构和数据流中提到的文件
-4. **spec.md** — 需求规格中提到的模块和边界
 
 列出所有受影响的源文件（排除 openspec/ 目录自身的文档），按项目实际使用的语言/框架类型识别。
 
@@ -209,7 +211,7 @@ openspec/changes/{spec-name}/
 
 ---
 
-## 角色列表
+## 角色列表（内置默认）
 
 | 角色 | 文件 | 优先级 | 关注领域 |
 |------|------|--------|----------|
@@ -221,7 +223,7 @@ openspec/changes/{spec-name}/
 | 安全审查员 | `specreview/config/security-check.md` | 60 | 注入防护、敏感信息、权限校验 |
 | 测试审查员 | `specreview/config/test-check.md` | 70 | 异常捕获、超时重试、日志记录、降级策略 |
 
-> 以上为内置角色。如需添加自定义角色（如 API 审查、TypeScript 类型检查等），参考 `/specreview init` 流程或直接编辑 `specreview/config.yaml` 在 `roles:` 下追加。
+> ⚠️ 实际启用的角色以 `specreview/config.yaml` 为准。用户可自定义添加或调整内置角色，参考 `/specreview init` 流程。
 
 ---
 
@@ -231,4 +233,4 @@ openspec/changes/{spec-name}/
 - **客观表述**，基于代码事实，不主观臆断
 - **严重程度分级**：high（必须修复）/ mid（建议修复）/ low（仅供参考）
 - **零问题 = 通过**，不需要编造发现
-- **需求审查**是最重要的角色——代码必须满足需求规格
+- 如果配置了**需求审查员**：该角色权重最高——所有改动的代码必须满足 `specs/` 中的需求规格
