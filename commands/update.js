@@ -81,7 +81,7 @@ export async function update({ projectPath }) {
 async function updateNpmPackage() {
   const npmSpinner = ora({ text: 'Checking for specreview updates...', color: 'gray' }).start();
   try {
-    const { stderr } = await execAsync('npm update -g specreview', { timeout: 30000 });
+    const { stderr } = await execAsync('npm install -g specreview@latest', { timeout: 30000 });
 
     if (stderr && stderr.includes('npm ERR')) {
       npmSpinner.warn(`npm warning:\n${stderr}`);
